@@ -1,9 +1,13 @@
 import cv2
+from april_tag_detector import AprilTagDetector
 import numpy as np
 from fastapi import FastAPI, WebSocket
 import uvicorn
+import json
+
 
 app = FastAPI()
+Pose_detector = AprilTagDetector()
 
 @app.websocket("/stream")
 async def websocket_stream(websocket: WebSocket):
@@ -17,6 +21,13 @@ async def websocket_stream(websocket: WebSocket):
             img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
             if img is not None:
                 cv2.imshow("Phone Camera Stream", img)
+                pose = Pose_detector.pose_detected(img)
+
+                if pose:
+                    pose_serializable = {k: v.tolist() for k, v in pose.items()}
+                    await websocket.send_text(json.dumps(pose_serializable))
+                    print(pose_serializable)
+
                 if cv2.waitKey(1) & 0xFF == ord('q'):  # Press 'q' to quit
                     break
     except Exception as e:

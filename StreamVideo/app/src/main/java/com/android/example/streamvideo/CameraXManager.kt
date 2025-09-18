@@ -20,11 +20,24 @@ import io.ktor.websocket.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.consumeAsFlow
 import java.io.ByteArrayOutputStream
+import kotlinx.serialization.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.SerialName
+
 
 class CameraXManager(
     private val context: Context,
     private val lifecycleOwner: ComponentActivity
 ) {
+
+
+    @Serializable
+    data class PoseData(
+        val origin: List<Int>,
+        @SerialName("x-axis") val xAxis: List<Int>,
+        @SerialName("y-axis") val yAxis: List<Int>,
+        @SerialName("z-axis") val zAxis: List<Int>
+    )
     companion object {
         private val REQUIRED_PERMISSIONS = mutableListOf(
             android.Manifest.permission.CAMERA
@@ -104,7 +117,15 @@ class CameraXManager(
                     webSocketSession = this
                     connectionStatus = "Connected and streaming"
                     println("WebSocket connected")
-                    incoming.consumeAsFlow().collect { }
+                    incoming.consumeAsFlow().collect {
+                        frame -> when(frame) {
+                            is Frame.Text -> {
+                                val json_received = frame.readText()
+                                val pose = Json.decodeFromString<PoseData>(json_received)
+                                println("Response: ${pose.origin}")
+                            } else -> {println("No response")}
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 connectionStatus = "Error: ${e.message}"
@@ -145,6 +166,8 @@ class CameraXManager(
                 startCamera()
             }
         }
+
+
 
     // ✅ Convert ImageProxy → NV21 → JPEG safely
     fun ImageProxy.toJpegByteArray(quality: Int = 80): ByteArray {

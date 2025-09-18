@@ -53,7 +53,7 @@ fun CameraPreview(cameraXManager: CameraXManager) {
     LaunchedEffect(Unit) {
         while (true) {
             connectionStatus = cameraXManager.getConnectionStatus()
-            delay(1000) // Update every second
+            delay(10) // Update every second
         }
     }
 
