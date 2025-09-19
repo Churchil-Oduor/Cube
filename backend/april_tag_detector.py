@@ -20,47 +20,24 @@ class AprilTagDetector:
         debug=0
         )
 
+
     def pose_detected(self, frame):
         gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
         tags = self.__detector.detect(
-                gray,
-                estimate_tag_pose = True,
-                camera_params = self.camera_params,
-                tag_size = self.__tag_size)
+            gray,
+            estimate_tag_pose=True,
+            camera_params=self.camera_params,
+            tag_size=self.__tag_size
+        )
 
         for tag in tags:
-            pose_R = tag.pose_R
-            pose_t = tag.pose_t
-            axis_length = self.__tag_size * 0.5
-            axis_points = np.float32([
-                [0, 0, 0], #origin
-                [axis_length, 0, 0], #X-axis
-                [0, axis_length, 0], #Y-axis
-                [0, 0, axis_length] # Z-axis
-                ]).reshape(-1, 3)
+            pose_R = tag.pose_R  # 3x3 rotation matrix
+            pose_t = tag.pose_t  # 3x1 translation vector
 
-            camera_matrix = np.array([
+            # Build homogeneous transformation matrix
+            T = np.eye(4, dtype=np.float32)
+            T[:3, :3] = pose_R  # rotation
+            T[:3, 3] = pose_t.flatten()  # translation
 
-                [self.fx, 0, self.cx],
-                [0, self.fy, self.cy],
-                [0, 0, 1]
-                ], dtype=np.float32)
+            return T  # 4x4 matrix
 
-            dist_coeffs = np.zeros((4, 1))
-            axis_2d, _ = cv.projectPoints(
-                    axis_points,
-                    pose_R,
-                    pose_t,
-                    camera_matrix,
-                    dist_coeffs
-                    )
-            axis_2d = axis_2d.reshape(-1, 2).astype(int)
-            origin = tuple(axis_2d[0])
-            co_ordinates = {
-                    "origin": axis_2d[0],
-                    "x-axis":  axis_2d[1],
-                    "y-axis": axis_2d[2],
-                    "z-axis": axis_2d[3]
-                }
-
-            return co_ordinates

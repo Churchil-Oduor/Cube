@@ -21,12 +21,14 @@ async def websocket_stream(websocket: WebSocket):
             img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
             if img is not None:
                 cv2.imshow("Phone Camera Stream", img)
-                pose = Pose_detector.pose_detected(img)
 
-                if pose:
-                    pose_serializable = {k: v.tolist() for k, v in pose.items()}
-                    await websocket.send_text(json.dumps(pose_serializable))
-                    print(pose_serializable)
+
+                pose_data = Pose_detector.pose_detected(img)
+
+                if pose_data is not None:
+                    flattened = pose_data.flatten().tolist()
+                  #  await websocket.send_text(json.dumps({"pose_matrix": flattened}))
+                    print(flattened)
 
                 if cv2.waitKey(1) & 0xFF == ord('q'):  # Press 'q' to quit
                     break
